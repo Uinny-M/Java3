@@ -5,9 +5,9 @@ import java.util.ArrayList;
 /**
  * Created by mma on 12.02.2020.
  */
-public class Box {
+public class Box<T extends Fruit> {
     private float boxWeight;
-    ArrayList<Fruit> box = new ArrayList<>();
+    ArrayList<T> box = new ArrayList();
 
     public Box() {
         this.boxWeight = boxWeight;
@@ -21,14 +21,16 @@ public class Box {
         return this.getWeight() == box.getWeight();
     }
 
-    public void add(Fruit fruit) {
-        box.add(fruit);
-        boxWeight = fruit.getWeight();
+    public void add(T fruit) {
+        if ((box.isEmpty()) || (fruit.getClass().equals(box.get(0).getClass()))) {
+            box.add((T) fruit);
+            boxWeight = fruit.getWeight();
+        } else System.out.println("Отставить мультифрукт!");
     }
 
-    public void sprinkle(Box newbox) {
+    public void sprinkle(Box newBox) {
         for (int i = 0; i < box.size(); i++) {
-            newbox.add(box.get(i));
+            newBox.add(box.get(i));
             box.remove(i);
         }
         boxWeight = 0;
