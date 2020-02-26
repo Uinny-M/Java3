@@ -19,6 +19,7 @@ public class Library {
     // то есть сообщение, которое будет посылаться всем
     public static final String TYPE_BCAST_CLIENT = "/client_msg";
     public static final String USER_LIST = "/user_list";
+    public static final String CHANGE_NICK = "/change_nick";
 
     public static String getTypeBcastClient(String msg) {
         return TYPE_BCAST_CLIENT + DELIMITER + msg;
@@ -30,6 +31,9 @@ public class Library {
 
     public static String getAuthRequest(String login, String password) {
         return AUTH_REQUEST + DELIMITER + login + DELIMITER + password;
+    }
+    public static String getChangeNick(String login, String newNick) {
+        return CHANGE_NICK + DELIMITER + login +  DELIMITER + newNick;
     }
 
     public static String getAuthAccept(String nickname) {
