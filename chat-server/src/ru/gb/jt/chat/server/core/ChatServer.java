@@ -11,6 +11,8 @@ import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
 
@@ -21,24 +23,26 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     public static final int ACTIVITYTIMEOUT = 12000;
     private Vector<SocketThread> clients = new Vector<>();
     private Thread checkActivity;
-
+    ExecutorService executor;
 
     public ChatServer(ChatServerListener listener) {
         this.listener = listener;
     }
 
     public void start(int port) {
-        if (server != null && server.isAlive()) System.out.println("Server is already started");
 
+        if (server != null && server.isAlive()) System.out.println("Server is already started");
         else {
+            executor = Executors.newCachedThreadPool();
+
             server = new ServerSocketThread(this, "Server", port, 2000);
-            checkActivity = new Thread() {
-                synchronized void check() {
+            executor.submit(new Thread() {
+                synchronized void check () {
                     ClientThread client;
                     for (int i = 0; i < clients.size(); i++) {
                         client = (ClientThread) clients.get(i);
                         if (!client.isAuthorized() && (System.currentTimeMillis() - client.getCreateTime()) > ACTIVITYTIMEOUT) {
-                            client.sendMessage(Library.AUTH_DENIED+Library.DELIMITER+"Your connection was closed");
+                            client.sendMessage(Library.AUTH_DENIED + Library.DELIMITER + "Your connection was closed");
                             clients.get(i).close();
                             clients.remove(i);
                         }
@@ -46,7 +50,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
                 }
 
                 @Override
-                public void run() {
+                public void run () {
 
                     while (!isInterrupted()) {
                         if (!clients.isEmpty()) {
@@ -58,11 +62,46 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
                             }
                         }
                     }
-
                 }
-            };
-            checkActivity.start();
+            } );
+
         }
+
+
+//        else{
+//            server = new ServerSocketThread(this, "Server", port, 2000);
+//            checkActivity = new Thread() {
+//
+//                synchronized void check() {
+//                    ClientThread client;
+//                    for (int i = 0; i < clients.size(); i++) {
+//                        client = (ClientThread) clients.get(i);
+//                        if (!client.isAuthorized() && (System.currentTimeMillis() - client.getCreateTime()) > ACTIVITYTIMEOUT) {
+//                            client.sendMessage(Library.AUTH_DENIED + Library.DELIMITER + "Your connection was closed");
+//                            clients.get(i).close();
+//                            clients.remove(i);
+//                        }
+//                    }
+//                }
+//
+//                @Override
+//                public void run() {
+//
+//                    while (!isInterrupted()) {
+//                        if (!clients.isEmpty()) {
+//                            try {
+//                                check();
+//                                sleep(1000);
+//                            } catch (InterruptedException e) {
+//                                putLog("Поток проверки не смог уснуть " + e.getMessage());
+//                            }
+//                        }
+//                    }
+//
+//                }
+//            };
+//            checkActivity.start();
+//        }
 
     }
 
@@ -82,7 +121,6 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
 
     /**
      * Server methods
-
      */
 
 
@@ -105,9 +143,6 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public void onServerSocketCreated(ServerSocketThread thread, ServerSocket server) {
         putLog("Server socket created");
-
-
-
 
 
     }
@@ -133,7 +168,6 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
 
     /**
      * Socket methods
-
      */
 
 
@@ -151,8 +185,8 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         if (client.isAuthorized() && !client.isReconnecting()) {
             sendToAuthClients(Library.getTypeBroadcast("Server",
                     client.getNickname() + " disconnected"));
-        }
-        else putLog("Неудачная попытка входа на "+client.getSocket().toString()+".\nСокет был закрыт по таймауту;");
+        } else
+            putLog("Неудачная попытка входа на " + client.getSocket().toString() + ".\nСокет был закрыт по таймауту;");
 
         sendToAuthClients(Library.getUserList(getUsers()));
     }
@@ -206,6 +240,12 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
             case Library.TYPE_BCAST_CLIENT:
                 sendToAuthClients(Library.getTypeBroadcast(
                         client.getNickname(), arr[1]));
+                break;
+            case Library.CHANGE_NICK:
+                //System.out.println("ssss");
+                String login = arr[1];
+                String newNick = arr[2];
+                SqlClient.changeNick(newNick, login);
                 break;
             default:
                 client.sendMessage(Library.getMsgFormatError(msg));

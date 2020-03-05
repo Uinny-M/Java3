@@ -1,7 +1,9 @@
 package ru.gb.jt.chat.server.gui;
 
+import ru.gb.jt.chat.client.ClientGUI;
 import ru.gb.jt.chat.server.core.ChatServer;
 import ru.gb.jt.chat.server.core.ChatServerListener;
+
 
 import javax.swing.*;
 import java.awt.*;
@@ -56,7 +58,8 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
         Object src = e.getSource();
         if (src == btnStart) {
             chatServer.start(8189);
-        } else if (src == btnStop) {
+            ClientGUI.main(null);
+                    } else if (src == btnStop) {
 //            throw new RuntimeException("Hello from EDT");
             chatServer.stop();
         } else {

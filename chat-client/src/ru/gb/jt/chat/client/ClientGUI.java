@@ -1,6 +1,7 @@
 package ru.gb.jt.chat.client;
 
 import ru.gb.jt.chat.common.Library;
+import ru.gb.jt.chat.server.core.SqlClient;
 import ru.gb.jt.network.SocketThread;
 import ru.gb.jt.network.SocketThreadListener;
 
@@ -32,6 +33,8 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     private final JButton btnLogin = new JButton("Login");
 
     private final JPanel panelBottom = new JPanel(new BorderLayout());
+    private final JPanel panelBottom1 = new JPanel(new GridLayout(1, 2)); //панель для 2 кнопок
+    private final JButton btnRename = new JButton("Rename"); //создали кнопку
     private final JButton btnDisconnect = new JButton("<html><b>Disconnect</b></html>");
     private final JTextField tfMessage = new JTextField();
     private final JButton btnSend = new JButton("Send");
@@ -58,6 +61,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         tfMessage.addActionListener(this);
         btnLogin.addActionListener(this);
         btnDisconnect.addActionListener(this);
+        btnRename.addActionListener(this);
         panelBottom.setVisible(false);
 
         panelTop.add(tfIPAddress);
@@ -66,7 +70,9 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         panelTop.add(tfLogin);
         panelTop.add(tfPassword);
         panelTop.add(btnLogin);
-        panelBottom.add(btnDisconnect, BorderLayout.WEST);
+        panelBottom1.add(btnDisconnect);
+        panelBottom1.add(btnRename);
+        panelBottom.add(panelBottom1, BorderLayout.WEST);
         panelBottom.add(tfMessage, BorderLayout.CENTER);
         panelBottom.add(btnSend, BorderLayout.EAST);
 
@@ -107,9 +113,22 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             connect();
         } else if (src == btnDisconnect) {
             socketThread.close();
+        } else if (src == btnRename) {
+            changeNickname();
         } else {
             throw new RuntimeException("Unknown source: " + src);
         }
+    }
+
+    public void changeNickname() { //метод смены ника
+        String newNick = tfMessage.getText();
+        String login = tfLogin.getText();
+        if ("".equals(newNick)) return;
+        tfMessage.setText(null);
+        tfMessage.requestFocusInWindow();
+        socketThread.sendMessage(Library.getChangeNick(login,newNick));
+        socketThread.close();
+        connect();
     }
 
     private void sendMessage() {
@@ -212,7 +231,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
                 break;
             case Library.AUTH_DENIED:
 
-                putLog(msg.replace(Library.DELIMITER," "));
+                putLog(msg.replace(Library.DELIMITER, " "));
 
                 break;
             case Library.MSG_FORMAT_ERROR:
