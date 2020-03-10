@@ -1,7 +1,7 @@
 package ru.gb.jt.chat.client;
 
 import ru.gb.jt.chat.common.Library;
-import ru.gb.jt.chat.server.core.SqlClient;
+//import ru.gb.jt.chat.server.core.SqlClient;
 import ru.gb.jt.network.SocketThread;
 import ru.gb.jt.network.SocketThreadListener;
 
@@ -9,12 +9,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.util.*;
 
 public class ClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, SocketThreadListener {
 
@@ -88,6 +87,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         try {
             Socket socket = new Socket(tfIPAddress.getText(), Integer.parseInt(tfPort.getText()));
             socketThread = new SocketThread(this, "Client", socket);
+            getHistory(100);
         } catch (IOException e) {
             showException(Thread.currentThread(), e);
         }
@@ -126,7 +126,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         if ("".equals(newNick)) return;
         tfMessage.setText(null);
         tfMessage.requestFocusInWindow();
-        socketThread.sendMessage(Library.getChangeNick(login,newNick));
+        socketThread.sendMessage(Library.getChangeNick(login, newNick));
         socketThread.close();
         connect();
     }
@@ -138,11 +138,11 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         tfMessage.setText(null);
         tfMessage.requestFocusInWindow();
         socketThread.sendMessage(Library.getTypeBcastClient(msg));
-        //wrtMsgToLogFile(msg, username);
+        wrtMsgToLogFile(msg, username);
     }
 
     private void wrtMsgToLogFile(String msg, String username) {
-        try (FileWriter out = new FileWriter("log.txt", true)) {
+        try (FileWriter out = new FileWriter("history.txt", true)) {
             out.write(username + ": " + msg + "\n");
             out.flush();
         } catch (IOException e) {
@@ -151,6 +151,31 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
                 showException(Thread.currentThread(), e);
             }
         }
+    }
+
+    private void getHistory(int numberMsg) {
+
+        String[] str = new String[numberMsg];
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(
+                        new FileInputStream("history.txt")))) {
+            String line;
+            int a = 0;
+
+            while (((line = reader.readLine()) != null)) {
+                str[a % numberMsg] = line;
+                a++;
+            }
+
+        } catch (IOException e) {
+            // log error
+        }
+        for (int i = 0; i < numberMsg; i++) {
+            if (str[i] != null)
+                System.out.println(str[i]);
+        }
+
     }
 
     private void putLog(String msg) {
